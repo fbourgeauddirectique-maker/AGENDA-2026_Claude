@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Agenda">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f6f4ef">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>Mon Agenda</title>
+<style>
+:root{--bg:#f6f4ef;--card:#fff;--ink:#1f2328;--mut:#6b7280;--line:#e5e1d8;--soft:#efece5;--red:#dc2626}
+@media(prefers-color-scheme:dark){:root{--bg:#15171a;--card:#1e2125;--ink:#ecebe7;--mut:#9aa0a8;--line:#2c3036;--soft:#262a2f;--red:#f87171}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+#app{max-width:640px;margin:0 auto;padding:calc(14px + env(safe-area-inset-top)) 14px calc(60px + env(safe-area-inset-bottom))}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+.bar{display:flex;align-items:center;gap:8px}
+.nav{display:flex;gap:6px;align-items:center;flex:1}
+.nb{width:42px;height:42px;border-radius:12px;background:var(--card);border:1px solid var(--line);font-size:22px;line-height:1}
+.today{height:42px;padding:0 14px;border-radius:12px;background:var(--ink);color:var(--bg);font-weight:600}
+.pick{position:relative;width:42px;height:42px;border-radius:12px;background:var(--card);border:1px solid var(--line);display:grid;place-items:center;font-size:18px}
+.pick input{position:absolute;inset:0;opacity:0;width:100%;height:100%}
+h1{font-size:24px;margin:14px 2px 10px;font-weight:700;letter-spacing:-.01em}
+h1::first-letter{text-transform:uppercase}
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:12px}
+.wd{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:6px 0 7px;text-align:center;position:relative}
+.wd small{display:block;font-size:11px;color:var(--mut);text-transform:uppercase}
+.wd b{font-size:17px}
+.wd.tod b{color:#0d9488}
+.wd.sel{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.wd.sel small{color:inherit;opacity:.7}.wd.sel.tod b{color:inherit}
+.wd i{position:absolute;top:-6px;right:-3px;min-width:18px;height:18px;border-radius:9px;background:#d97706;color:#fff;font:700 11px/18px sans-serif;font-style:normal;padding:0 4px}
+.late{display:block;width:100%;text-align:left;padding:10px 14px;border-radius:12px;background:#fef3c7;color:#92400e;font-weight:600;margin-bottom:12px;border:1px solid #fde68a}
+@media(prefers-color-scheme:dark){.late{background:#3a2d0f;color:#fbbf24;border-color:#5a4513}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;margin-bottom:12px;overflow:hidden;border-top:4px solid var(--c)}
+.card.flat{border-top-width:1px}
+.ch{display:flex;justify-content:space-between;align-items:baseline;padding:12px 14px 4px}
+.ch h2{margin:0;font-size:17px;color:var(--c)}
+.ch span{font-size:13px;color:var(--mut)}
+ul{list-style:none;margin:0;padding:0}
+.it{display:flex;align-items:flex-start;gap:6px;padding:8px 8px 8px 12px;border-top:1px solid var(--line)}
+.card.flat .it{border-top:0}
+.ck{flex:none;width:26px;height:26px;border-radius:8px;border:2px solid var(--c);margin:1px 4px 0 0;color:transparent;font-weight:700;font-size:15px;line-height:1}
+.it.done .ck{background:var(--c);color:var(--card)}
+.body{flex:1;min-width:0}
+.tx{word-break:break-word;padding:2px 0;white-space:pre-wrap}
+.it.done .tx{text-decoration:line-through;color:var(--mut)}
+.rm{font-size:12.5px;color:var(--mut)}
+.rm.over{color:var(--red);font-weight:600}
+.ic{flex:none;width:34px;height:30px;border-radius:8px;color:var(--mut);font-size:17px}
+.ic.on{color:var(--c)}
+.ic:active{background:var(--soft)}
+.ed,.add,.fld{width:100%;font:inherit;font-size:16px;color:inherit;background:var(--soft);border:1px solid transparent;border-radius:10px;padding:9px 11px;outline:0}
+.ed:focus,.add:focus,.fld:focus{border-color:var(--c,#0d9488)}
+.addrow{display:flex;gap:8px;padding:10px 12px 12px;border-top:1px solid var(--line)}
+.plus{flex:none;width:42px;border-radius:10px;background:var(--c);color:#fff;font-size:22px;font-weight:700}
+.empty{padding:6px 14px 10px;color:var(--mut);font-size:14px}
+.gd{margin:16px 2px 6px;font-weight:700;color:var(--mut);font-size:14px}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--c);flex:none;margin:9px 4px 0 0}
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;z-index:9}
+.sheet>div{background:var(--card);width:100%;max-width:640px;border-radius:18px 18px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom));max-height:88vh;overflow:auto}
+.sheet h3{margin:0 0 8px}
+.sheet h4{margin:16px 0 6px;font-size:14px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
+.sheet textarea{width:100%;height:110px;font:12px monospace;background:var(--soft);color:inherit;border:1px solid var(--line);border-radius:10px;padding:8px}
+.row{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;align-items:center}
+.btn{padding:10px 14px;border-radius:10px;background:var(--ink);color:var(--bg);font-weight:600}
+.btn.alt{background:var(--soft);color:var(--ink)}
+.btn.danger{background:var(--soft);color:var(--red)}
+.btn.full{width:100%;text-align:left}
+.msg{font-size:13px;color:var(--mut);margin-top:8px}
+.crow{display:flex;gap:6px;align-items:center;margin-bottom:8px}
+.crow input[type=color]{flex:none;width:40px;height:38px;border:0;background:none;padding:0}
+.lbl{display:block;font-size:13px;color:var(--mut);margin:12px 0 4px}
+.chk{display:flex;gap:8px;align-items:center;font-size:14px;margin-top:8px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+/* ===== Données ===== */
+const KEY='agenda_v2';
+const PALETTE=['#0d9488','#d97706','#7c3aed','#e11d48','#2563eb','#65a30d','#c026d3','#0891b2'];
+const LEADS=[[0,"À l’heure"],[10,"10 min avant"],[30,"30 min avant"],[60,"1 h avant"],[1440,"1 jour avant"]];
+const DEFAULT_CATS=()=>[{id:'perso',n:'Perso',c:PALETTE[0]},{id:'direct',n:'Directique',c:PALETTE[1]},{id:'divers',n:'Divers',c:PALETTE[2]}];
+let S={v:2,cats:DEFAULT_CATS(),days:{}};
+let storageOk=true;
+try{const r=localStorage.getItem(KEY);if(r){const o=JSON.parse(r);if(o&&o.days&&Array.isArray(o.cats)&&o.cats.length)S=o}}catch(e){storageOk=false}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));storageOk=true}catch(e){storageOk=false}}
+
+/* ===== Outils ===== */
+const $=s=>document.querySelector(s);
+const pad=n=>String(n).padStart(2,'0');
+const iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const parse=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
+const add=(s,n)=>{const d=parse(s);d.setDate(d.getDate()+n);return iso(d)};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const label=(s,o)=>parse(s).toLocaleDateString('fr-FR',o);
+const catOf=id=>S.cats.find(c=>c.id===id)||S.cats[0];
+const leadLabel=m=>(LEADS.find(l=>l[0]===m)||LEADS[0])[1];
+const nowHM=()=>{const n=new Date();return pad(n.getHours())+':'+pad(n.getMinutes())};
+
+let today=iso(new Date()), cur=today, view='day', sheet=null, editing=null, drafts={}, msg='';
+
+const undone=d=>(S.days[d]||[]).filter(x=>!x.done).length;
+function find(d,i){return (S.days[d]||[]).findIndex(x=>x.id===i)}
+function lateList(){const r=[];Object.keys(S.days).filter(d=>d<today).sort().forEach(d=>S.days[d].forEach(it=>{if(!it.done)r.push({d,it})}));return r}
+
+/* ===== Actions ===== */
+function addItem(cat,txt){txt=(txt||'').trim();if(!txt)return;(S.days[cur]=S.days[cur]||[]).push({id:uid(),cat,t:txt,done:false});save()}
+function toggle(d,i){const k=find(d,i);if(k<0)return;S.days[d][k].done=!S.days[d][k].done;save()}
+function remove(d,i){const k=find(d,i);if(k<0)return;S.days[d].splice(k,1);if(!S.days[d].length)delete S.days[d];save()}
+function move(d,i,to){const k=find(d,i);if(k<0)return;const it=S.days[d].splice(k,1)[0];if(!S.days[d].length)delete S.days[d];(S.days[to]=S.days[to]||[]).push(it);save()}
+function setText(d,i,v){const k=find(d,i);if(k<0)return;v=v.trim();if(!v){remove(d,i);return}S.days[d][k].t=v;save()}
+
+/* ===== Calendrier (.ics) ===== */
+const fmtLocal=dt=>dt.getFullYear()+pad(dt.getMonth()+1)+pad(dt.getDate())+'T'+pad(dt.getHours())+pad(dt.getMinutes())+'00';
+const icsEsc=s=>String(s).replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n');
+const fold=s=>{let o='';while(s.length>72){o+=s.slice(0,72)+'\r\n ';s=s.slice(72)}return o+s};
+function icsText(list){
+  const stamp=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+/,'');
+  const L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Mon Agenda//FR','CALSCALE:GREGORIAN'];
+  list.forEach(({d,it})=>{
+    const [h,m]=it.time.split(':').map(Number);const st=parse(d);st.setHours(h,m,0,0);
+    const en=new Date(st.getTime()+30*60000);
+    L.push('BEGIN:VEVENT','UID:'+it.id+'@mon-agenda','DTSTAMP:'+stamp,'DTSTART:'+fmtLocal(st),'DTEND:'+fmtLocal(en),
+      fold('SUMMARY:'+icsEsc(it.t)),fold('DESCRIPTION:'+icsEsc(catOf(it.cat).n)),
+      'BEGIN:VALARM','ACTION:DISPLAY',fold('DESCRIPTION:'+icsEsc(it.t)),'TRIGGER:-PT'+(it.lead||0)+'M','END:VALARM','END:VEVENT');
+  });
+  L.push('END:VCALENDAR');return L.join('\r\n');
+}
+function download(name,mime,text){
+  const u=URL.createObjectURL(new Blob([text],{type:mime}));
+  const a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(u),5000);
+}
+function reminders(from){const r=[];Object.keys(S.days).filter(d=>d>=from).sort().forEach(d=>S.days[d].forEach(it=>{if(it.time&&!it.done)r.push({d,it})}));return r}
+
+/* ===== Import / export ===== */
+function doImport(text,replace){
+  let o;try{o=JSON.parse(text)}catch(e){return 'Fichier illisible (JSON invalide).'}
+  if(!o||typeof o!=='object')return 'Fichier illisible.';
+  const days=(o.days&&typeof o.days==='object')?o.days:o;
+  const cats=Array.isArray(o.cats)?o.cats.filter(c=>c&&c.id&&c.n):null;
+  if(replace){S={v:2,cats:cats&&cats.length?cats.map(c=>({id:String(c.id),n:String(c.n),c:c.c||PALETTE[0]})):DEFAULT_CATS(),days:{}}}
+  else if(cats)cats.forEach(c=>{if(!S.cats.some(x=>x.id===c.id))S.cats.push({id:String(c.id),n:String(c.n),c:c.c||PALETTE[S.cats.length%PALETTE.length]})});
+  let n=0;
+  Object.keys(days).forEach(k=>{
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(k)||!Array.isArray(days[k]))return;
+    const have=new Set((S.days[k]||[]).map(z=>z.id));
+    days[k].forEach(it=>{
+      if(!it||!it.t)return;const id=it.id||uid();if(have.has(id))return;
+      const item={id,cat:S.cats.some(c=>c.id===it.cat)?it.cat:S.cats[0].id,t:String(it.t),done:!!it.done};
+      if(it.time&&/^\d{2}:\d{2}$/.test(it.time)){item.time=it.time;item.lead=+it.lead||0}
+      (S.days[k]=S.days[k]||[]).push(item);have.add(id);n++;
+    });
+  });
+  save();return n+' tâche(s) importée(s) ✓';
+}
+
+/* ===== Vues ===== */
+function itemRow(d,it,dot){
+  const c=catOf(it.cat),ed=editing&&editing.d===d&&editing.i===it.id;
+  const over=it.time&&!it.done&&(d<today||(d===today&&it.time<nowHM()));
+  const rem=it.time?`<div class="rm ${over?'over':''}">⏰ ${it.time}${it.lead?' · '+leadLabel(it.lead):''}</div>`:'';
+  return `<li class="it ${it.done?'done':''}" style="--c:${c.c}">`+
+    (dot?`<span class="dot"></span>`:`<button class="ck" data-a="tg" data-d="${d}" data-i="${it.id}" aria-label="Fait">✓</button>`)+
+    `<div class="body">`+(ed?`<input class="ed" data-d="${d}" data-i="${it.id}" value="${esc(it.t)}">`:`<div class="tx" data-a="ed" data-d="${d}" data-i="${it.id}">${esc(it.t)}</div>`)+rem+`</div>`+
+    (dot?`<button class="ic" data-a="tg" data-d="${d}" data-i="${it.id}" title="Fait">✓</button>`:'')+
+    `<button class="ic ${it.time?'on':''}" data-a="rem" data-d="${d}" data-i="${it.id}" title="Rappel">⏰</button>`+
+    `<button class="ic" data-a="${dot?'mvt':'mv'}" data-d="${d}" data-i="${it.id}" title="${dot?'Reporter à aujourd’hui':'Reporter à demain'}">→</button>`+
+    `<button class="ic" data-a="rm" data-d="${d}" data-i="${it.id}" title="Supprimer">×</button></li>`;
+}
+function dayView(){
+  const dow=(parse(cur).getDay()+6)%7;let wk='';
+  for(let i=0;i<7;i++){const d=add(cur,i-dow),n=undone(d);
+    wk+=`<button class="wd ${d===cur?'sel':''} ${d===today?'tod':''}" data-a="go" data-d="${d}"><small>${label(d,{weekday:'short'}).replace('.','')}</small><b>${parse(d).getDate()}</b>${n?`<i>${n}</i>`:''}</button>`}
+  const L=lateList().length;let cards='';
+  S.cats.forEach(c=>{
+    const items=(S.days[cur]||[]).filter(x=>catOf(x.cat).id===c.id),dn=items.filter(x=>x.done).length;
+    cards+=`<section class="card" style="--c:${c.c}"><div class="ch"><h2>${esc(c.n)}</h2><span>${items.length?dn+'/'+items.length:''}</span></div>`+
+      (items.length?`<ul>${items.map(it=>itemRow(cur,it)).join('')}</ul>`:`<div class="empty">Rien de prévu</div>`)+
+      `<div class="addrow"><input class="add" data-cat="${c.id}" placeholder="Ajouter à ${esc(c.n)}…" enterkeyhint="done" value="${esc(drafts[c.id]||'')}"><button class="plus" data-a="add" data-cat="${c.id}" aria-label="Ajouter">+</button></div></section>`;
+  });
+  return `<div class="bar"><div class="nav"><button class="nb" data-a="prev" aria-label="Jour précédent">‹</button><button class="today" data-a="today">Aujourd’hui</button><button class="nb" data-a="next" aria-label="Jour suivant">›</button></div>`+
+    `<label class="pick">📅<input type="date" data-a="pick" value="${cur}"></label><button class="nb" data-a="menu" aria-label="Menu">⋯</button></div>`+
+    `<h1>${label(cur,{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</h1><div class="week">${wk}</div>`+
+    (L?`<button class="late" data-a="late">⚠ ${L} tâche${L>1?'s':''} en retard — voir</button>`:'')+cards;
+}
+function lateView(){
+  let html='',last='';
+  lateList().forEach(({d,it})=>{
+    if(d!==last){html+=`<div class="gd">${label(d,{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>`;last=d}
+    html+=`<section class="card flat" style="--c:${catOf(it.cat).c}"><ul>${itemRow(d,it,true)}</ul></section>`;
+  });
+  return `<div class="bar"><button class="nb" data-a="back" aria-label="Retour">‹</button></div><h1>En retard</h1>`+(html||`<div class="empty">Tout est à jour 🎉</div>`);
+}
+function sheetView(){
+  if(!sheet)return '';
+  let inner='';
+  if(sheet.t==='menu'){
+    const nrem=reminders(today).length;
+    inner=`<h3>Menu</h3>
+    <button class="btn alt full" data-a="cats">🏷️ Gérer les catégories</button>
+    <h4>Rappels</h4>
+    <button class="btn alt full" data-a="icsall">📅 Exporter mes rappels à venir (${nrem}) vers Calendrier</button>
+    <h4>Sauvegarde</h4>
+    <div class="row"><button class="btn" data-a="exp">Exporter (.json)</button><button class="btn alt" data-a="copy">Copier</button></div>
+    <label class="lbl">Importer : choisis un fichier…</label>
+    <input type="file" id="imf" accept=".json,application/json,text/plain">
+    <label class="lbl">…ou colle le texte d’une sauvegarde</label>
+    <textarea id="imt" placeholder="Colle ici"></textarea>
+    <label class="chk"><input type="checkbox" id="imr"> Remplacer tout (sinon : fusionner avec l’existant)</label>
+    <div class="row"><button class="btn alt" data-a="imp">Importer le texte</button><button class="btn alt" data-a="closesheet2">Fermer</button></div>
+    <div class="msg">${storageOk?'Les données sont enregistrées sur cet iPhone. Pense à exporter de temps en temps.':'⚠ Le stockage est bloqué : exporte tes données !'}</div>
+    <div class="msg">${esc(msg)}</div>`;
+  }else if(sheet.t==='cats'){
+    inner=`<h3>Catégories</h3>`+S.cats.map((c,k)=>`<div class="crow"><input type="color" value="${c.c}" data-a="ccol" data-k="${k}"><input class="fld cname" value="${esc(c.n)}" data-a="cname" data-k="${k}"><button class="ic" data-a="cup" data-k="${k}">↑</button><button class="ic" data-a="cdn" data-k="${k}">↓</button><button class="ic" data-a="cdel" data-k="${k}">×</button></div>`).join('')+
+    `<div class="crow"><input class="fld" id="newcat" placeholder="Nouvelle catégorie…"><button class="btn" data-a="cadd">Ajouter</button></div>
+    <div class="msg">Supprimer une catégorie déplace ses tâches vers la première catégorie.</div>
+    <div class="row"><button class="btn alt" data-a="menu">‹ Retour</button><button class="btn" data-a="closesheet2">OK</button></div>`;
+  }else if(sheet.t==='rem'){
+    const k=find(sheet.d,sheet.i),it=k<0?null:S.days[sheet.d][k];if(!it)return '';
+    inner=`<h3>⏰ Rappel</h3><div class="msg">${esc(it.t)} — ${label(sheet.d,{weekday:'long',day:'numeric',month:'long'})}</div>
+    <label class="lbl">Heure</label><input class="fld" type="time" id="rt" value="${it.time||'09:00'}">
+    <label class="lbl">Prévenir</label><select class="fld" id="rl">${LEADS.map(l=>`<option value="${l[0]}" ${(it.lead||0)===l[0]?'selected':''}>${l[1]}</option>`).join('')}</select>
+    <div class="row"><button class="btn" data-a="remsave">Enregistrer</button><button class="btn alt" data-a="remics">Ajouter à Calendrier</button></div>
+    <div class="row">${it.time?`<button class="btn danger" data-a="remdel">Retirer le rappel</button>`:''}<button class="btn alt" data-a="closesheet2">Fermer</button></div>
+    <div class="msg">Le rappel sonne via l’app Calendrier de l’iPhone : « Ajouter à Calendrier » télécharge un fichier à ouvrir pour l’y ajouter.</div>
+    <div class="msg">${esc(msg)}</div>`;
+  }
+  return `<div class="sheet" data-a="closesheet"><div>${inner}</div></div>`;
+}
+function render(){
+  const act=document.activeElement;
+  const keep=act&&act.classList&&act.classList.contains('add')?act.dataset.cat:null;
+  const root=$('#app');
+  root.innerHTML=(view==='late'?lateView():dayView())+sheetView();
+  if(editing){const e=root.querySelector('.ed');if(e){e.focus();e.setSelectionRange(e.value.length,e.value.length)}}
+  else if(keep){const e=root.querySelector('.add[data-cat="'+keep+'"]');if(e){e.focus();const l=e.value.length;e.setSelectionRange(l,l)}}
+}
+
+/* ===== Événements ===== */
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-a]');if(!b)return;
+  const a=b.dataset.a,d=b.dataset.d,i=b.dataset.i,k=+b.dataset.k;
+  if(a==='closesheet'&&e.target!==b)return;
+  switch(a){
+    case 'prev':cur=add(cur,-1);break;
+    case 'next':cur=add(cur,1);break;
+    case 'today':today=iso(new Date());cur=today;break;
+    case 'go':cur=d;break;
+    case 'tg':toggle(d,i);break;
+    case 'rm':remove(d,i);break;
+    case 'mv':move(d,i,add(d,1));break;
+    case 'mvt':move(d,i,today);break;
+    case 'ed':editing={d,i};break;
+    case 'late':view='late';break;
+    case 'back':view='day';break;
+    case 'menu':sheet={t:'menu'};msg='';break;
+    case 'cats':sheet={t:'cats'};break;
+    case 'closesheet':case 'closesheet2':sheet=null;msg='';break;
+    case 'add':{const inp=document.querySelector('.add[data-cat="'+b.dataset.cat+'"]');addItem(b.dataset.cat,inp&&inp.value);drafts[b.dataset.cat]='';break}
+    /* rappels */
+    case 'rem':sheet={t:'rem',d,i};msg='';break;
+    case 'remsave':{const t=$('#rt').value;if(!t){msg='Choisis une heure.';break}
+      const kk=find(sheet.d,sheet.i);if(kk>=0){S.days[sheet.d][kk].time=t;S.days[sheet.d][kk].lead=+$('#rl').value;save()}
+      sheet=null;msg='';break}
+    case 'remdel':{const kk=find(sheet.d,sheet.i);if(kk>=0){delete S.days[sheet.d][kk].time;delete S.days[sheet.d][kk].lead;save()}sheet=null;break}
+    case 'remics':{const kk=find(sheet.d,sheet.i);if(kk<0)break;const t=$('#rt').value;if(!t){msg='Choisis une heure.';break}
+      const it=S.days[sheet.d][kk];it.time=t;it.lead=+$('#rl').value;save();
+      download('rappel-'+sheet.d+'.ics','text/calendar',icsText([{d:sheet.d,it}]));
+      msg='Fichier généré : ouvre-le pour l’ajouter à Calendrier.';break}
+    case 'icsall':{const r=reminders(today);if(!r.length){msg='Aucun rappel à venir.';break}
+      download('rappels-agenda.ics','text/calendar',icsText(r));msg=r.length+' rappel(s) exporté(s) : ouvre le fichier pour les ajouter à Calendrier.';break}
+    /* catégories */
+    case 'cup':if(k>0){[S.cats[k-1],S.cats[k]]=[S.cats[k],S.cats[k-1]];save()}break;
+    case 'cdn':if(k<S.cats.length-1){[S.cats[k+1],S.cats[k]]=[S.cats[k],S.cats[k+1]];save()}break;
+    case 'cdel':{
+      if(S.cats.length<=1){alert('Il faut garder au moins une catégorie.');return}
+      const c=S.cats[k];if(!confirm('Supprimer « '+c.n+' » ? Ses tâches seront déplacées vers « '+(S.cats[k===0?1:0].n)+' ».'))return;
+      S.cats.splice(k,1);const fb=S.cats[0].id;
+      Object.values(S.days).forEach(arr=>arr.forEach(it=>{if(it.cat===c.id)it.cat=fb}));save();break}
+    case 'cadd':{const v=$('#newcat').value.trim();if(!v)return;
+      S.cats.push({id:'c'+uid(),n:v,c:PALETTE[S.cats.length%PALETTE.length]});save();break}
+    case 'ccol':case 'cname':return;
+    /* sauvegarde */
+    case 'exp':download('agenda-'+iso(new Date())+'.json','application/json',JSON.stringify(S,null,1));msg='Sauvegarde exportée.';break;
+    case 'copy':{const t=JSON.stringify(S);
+      (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>{msg='Copié ✓';render()},()=>{msg='Copie refusée : utilise « Exporter ».';render()});return}
+    case 'imp':{const t=$('#imt').value.trim();if(!t){msg='Colle d’abord le texte.';break}
+      msg=doImport(t,$('#imr').checked);break}
+    default:return;
+  }
+  render();
+});
+document.addEventListener('change',e=>{
+  const t=e.target,a=t.dataset&&t.dataset.a;
+  if(a==='pick'&&t.value){cur=t.value;view='day';render()}
+  else if(a==='ccol'){S.cats[+t.dataset.k].c=t.value;save()}
+  else if(a==='cname'){const v=t.value.trim();if(v){S.cats[+t.dataset.k].n=v;save()}else t.value=S.cats[+t.dataset.k].n}
+  else if(t.id==='imf'&&t.files&&t.files[0]){
+    const rep=$('#imr').checked,fr=new FileReader();
+    fr.onload=()=>{msg=doImport(String(fr.result),rep);render()};fr.readAsText(t.files[0]);
+  }
+});
+document.addEventListener('input',e=>{if(e.target.classList.contains('add'))drafts[e.target.dataset.cat]=e.target.value});
+function commitEdit(inp){if(!editing)return;const d=inp.dataset.d,i=inp.dataset.i,v=inp.value;editing=null;setText(d,i,v);render()}
+document.addEventListener('keydown',e=>{
+  const t=e.target;
+  if(t.classList.contains('add')&&e.key==='Enter'){e.preventDefault();addItem(t.dataset.cat,t.value);drafts[t.dataset.cat]='';render()}
+  else if(t.classList.contains('ed')){if(e.key==='Enter'){e.preventDefault();commitEdit(t)}else if(e.key==='Escape'){editing=null;render()}}
+  else if(t.id==='newcat'&&e.key==='Enter'){e.preventDefault();const v=t.value.trim();if(v){S.cats.push({id:'c'+uid(),n:v,c:PALETTE[S.cats.length%PALETTE.length]});save();render()}}
+});
+document.addEventListener('focusout',e=>{if(e.target.classList&&e.target.classList.contains('ed'))commitEdit(e.target)});
+document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden){const n=iso(new Date());if(n!==today){if(cur===today)cur=n;today=n}if(!editing&&!sheet)render()}
+});
+
+render();
+if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
